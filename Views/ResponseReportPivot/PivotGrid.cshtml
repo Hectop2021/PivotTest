@@ -1,0 +1,130 @@
+﻿@*For local binding*@
+
+@using PivotTest.Models;
+@using Kendo.Mvc.Extensions;
+@using Kendo.Mvc.UI;
+
+@model IEnumerable<ResponseReportPivot>
+
+@{
+    ViewBag.Title = "Response Report Pivot Grid";
+}
+@Html.AntiForgeryToken()
+
+<style>
+    .k-pivot-table .k-grid-content td {
+        text-align: left;
+    }
+</style>
+
+<button id="export" class="hidden-on-narrow">Export to Excel</button>
+@(Html.Kendo().Button().Name("reloadbtn")
+    .Content("Reload Data")
+    .Events(ev => ev.Click("reloadData"))
+)
+<hr class="k-hr" />
+
+@*@{
+    var data = Model;
+}*@
+
+<div class="k-pivotgrid-wrapper">
+
+    @(Html.Kendo().PivotConfigurator()
+        .Name("configurator")
+        .HtmlAttributes(new { @class = "hidden-on-narrow" })
+        .Filterable(true)
+        .Sortable(true)
+        .Height(570)
+        )
+
+    @(Html.Kendo().PivotGrid<ResponseReportPivot>()
+        .Name("pivotgrid")
+        .Excel(excel => excel
+        .FileName(ViewBag.ExportName)
+        .Filterable(true)
+        .ProxyURL(Url.Action("_ExcelExport", "ResponseReportPivotController"))
+        )
+        .Configurator("#configurator")
+        .ColumnWidth(100)
+        .Filterable(true)
+        .Height(570)
+        .Sortable(true)
+        .BindTo(@Model)
+        .DataSource(dataSource => dataSource
+        .Ajax()
+        .Sort(s =>
+        {
+            s.Add("Venue").Ascending();
+            s.Add("EventYear").Ascending();
+        })
+        .Schema(schema => schema
+        .Cube(cube => cube
+        .Dimensions(dimensions =>
+        {
+            dimensions.Add(model => model.Venue).Caption("All Venues");
+            dimensions.Add(model => model.EventYear).Caption("All Years");
+        })
+        .Measures(measures =>
+        {
+            measures.Add("Count").Field(model => model.Venue).AggregateName("count");
+        })
+        )
+        )
+        .Columns(columns =>
+        {
+            columns.Add("EventYear").Expand(true);
+        })
+        .Rows(rows => rows.Add("Venue").Expand(true))
+        .Measures(measures => measures.Values("Count"))
+        .Events(e => e.Error("onError"))
+        )
+    )
+</div>
+<div class="responsive-message"></div>
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/jszip/2.4.0/jszip.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $("#export").kendoButton({
+            icon: "file-xls",
+            click: function () {
+                $("#pivotgrid").getKendoPivotGrid().saveAsExcel();
+            }
+        });
+
+        //$("#refresh").kendoButton({
+        //    click: function () {
+        //        url: "@Url.Action("_ReadData", "ResponseReportPivotController")",
+        //            type: "POST",
+        //                success: function (response) {
+        //                    pivot.dataSource.data(response.Data)
+        //                }
+        //        //var pivot = $("#pivotgrid").data("kendoPivotGrid");
+        //        //reset(pivot, dataSourceConfig);
+        //    }
+        //});
+
+        //function reset(pivot, config) {
+        //    // Call the setDataSource method and reset the current state of the PivotGrid using the initial options.
+        //    // This will cause the data to reload with the exact same configuration.
+        //    pivot.setDataSource(new kendo.data.PivotDataSource(config));
+        //};
+    });
+
+    function reloadData() {
+        alert("in reloadData");
+        var pivot = $("#pivotgrid").getKendoPivotGrid();
+        $.ajax({
+            url: "@Url.Action("_ReadData", "ResponseReportPivotController")",
+            type: "POST",
+            success: function (response) {
+                pivot.dataSource.data(response.Data)
+            }
+        })
+    }
+
+    function onError(e) {
+        alert("error: " + kendo.stringify(e.errors[0]));
+    }
+</script>
