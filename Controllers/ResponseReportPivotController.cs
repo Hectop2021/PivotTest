@@ -52,20 +52,20 @@ namespace PivotTest.Controllers
             return View(sortedResponseList);
         }
 
-        [HttpPost]
-        public ActionResult _ExcelExport(string contentType, string base64, string fileName)
-        {
-            var fileContents = Convert.FromBase64String(base64);
-
-            return File(fileContents, contentType, fileName);
-        }
-
         //public ActionResult ReadData()
         public ActionResult _ReadData([DataSourceRequest]DataSourceRequest request)
         {
             IEnumerable<ResponseReportPivot> objResponseList = _context.ResponseReportPivot;
             var sortedResponseList = objResponseList.OrderBy(s => s.Venue).ThenBy(s => s.EventYear);
             return Json(sortedResponseList);
+        }
+
+        [HttpPost]
+        public ActionResult _ExcelExport(string contentType, string base64, string fileName)
+        {
+            var fileContents = Convert.FromBase64String(base64);
+
+            return File(fileContents, contentType, fileName);
         }
     }
 }

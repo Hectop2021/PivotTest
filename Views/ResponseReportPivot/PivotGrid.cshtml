@@ -18,10 +18,8 @@
 </style>
 
 <button id="export" class="hidden-on-narrow">Export to Excel</button>
-@(Html.Kendo().Button().Name("reloadbtn")
-    .Content("Reload Data")
-    .Events(ev => ev.Click("reloadData"))
-)
+<button id="refresh" class="hidden-on-narrow">Refresh Data</button>
+
 <hr class="k-hr" />
 
 @*@{
@@ -46,11 +44,11 @@
         .ProxyURL(Url.Action("_ExcelExport", "ResponseReportPivotController"))
         )
         .Configurator("#configurator")
-        .ColumnWidth(100)
+        .ColumnWidth(150)
         .Filterable(true)
         .Height(570)
         .Sortable(true)
-        .BindTo(@Model)
+        .BindTo(Model)
         .DataSource(dataSource => dataSource
         .Ajax()
         .Sort(s =>
@@ -83,7 +81,7 @@
 </div>
 <div class="responsive-message"></div>
 
-<script src="//cdnjs.cloudflare.com/ajax/libs/jszip/2.4.0/jszip.min.js"></script>
+@*<script src="//cdnjs.cloudflare.com/ajax/libs/jszip/2.4.0/jszip.min.js"></script>*@
 <script>
     $(document).ready(function () {
         $("#export").kendoButton({
@@ -93,36 +91,22 @@
             }
         });
 
-        //$("#refresh").kendoButton({
-        //    click: function () {
-        //        url: "@Url.Action("_ReadData", "ResponseReportPivotController")",
-        //            type: "POST",
-        //                success: function (response) {
-        //                    pivot.dataSource.data(response.Data)
-        //                }
-        //        //var pivot = $("#pivotgrid").data("kendoPivotGrid");
-        //        //reset(pivot, dataSourceConfig);
-        //    }
-        //});
-
-        //function reset(pivot, config) {
-        //    // Call the setDataSource method and reset the current state of the PivotGrid using the initial options.
-        //    // This will cause the data to reload with the exact same configuration.
-        //    pivot.setDataSource(new kendo.data.PivotDataSource(config));
-        //};
-    });
-
-    function reloadData() {
-        alert("in reloadData");
-        var pivot = $("#pivotgrid").getKendoPivotGrid();
-        $.ajax({
-            url: "@Url.Action("_ReadData", "ResponseReportPivotController")",
-            type: "POST",
-            success: function (response) {
-                pivot.dataSource.data(response.Data)
+        $("#refresh").kendoButton({
+            icon: "refresh",
+            click: function () {
+                var pivot = $("#pivotgrid").getKendoPivotGrid();
+                var measures = pivot.dataSource.measures();
+                $.ajax({
+                    url: "@Url.Action("_ReadData", "ResponseReportPivot")",
+                    type: "POST",
+                    success: function (response) {
+                        pivot.dataSource.data(response);
+                        pivot.dataSource.measures(measures);
+                    }
+                })
             }
-        })
-    }
+        });
+    });
 
     function onError(e) {
         alert("error: " + kendo.stringify(e.errors[0]));
